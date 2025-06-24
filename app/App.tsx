@@ -3,8 +3,8 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';  // Para navegación Stack
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';  // Para la navegación por pestañas
 import { Ionicons } from '@expo/vector-icons';  // Para los iconos
-import HomeScreen from './views/home/dashboard';  // Pantalla principal (Home)
-import RegisterScreen from './views/home/register';  // Pantalla de Registros
+import BillingScreen from './views/home/billing';  // Pantalla principal (Home)
+import BillingHistory from './views/home/billingHistory';  // Pantalla de Registros
 import SettingsScreen from './views/home/settings';  // Pantalla de Ajustes
 
 const Stack = createNativeStackNavigator();
@@ -20,8 +20,8 @@ function HomeTabs() {
 			}}
 		>
 			<Tab.Screen
-				name="Dashboard"
-				component={HomeScreen}
+				name="Facturar"
+				component={BillingScreen}
 				options={{
 					headerShown: false,
 					tabBarIcon: ({ color, size }) => (
@@ -30,8 +30,8 @@ function HomeTabs() {
 				}}
 			/>
 			<Tab.Screen
-				name="Records"
-				component={RegisterScreen}
+				name="Registro de Facturas"
+				component={BillingHistory}
 				options={{
 					headerShown: false,
 					tabBarIcon: ({ color, size }) => (
@@ -40,7 +40,7 @@ function HomeTabs() {
 				}}
 			/>
 			<Tab.Screen
-				name="Settings"
+				name="Ajustes"
 				component={SettingsScreen}
 				options={{
 					headerShown: false,
