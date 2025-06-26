@@ -20,7 +20,6 @@ const { width } = Dimensions.get('window');
 
 const BillingHistory: React.FC = () => {
 	const [invoices, setInvoices] = useState<any[]>([]);
-	const [expandedInvoice, setExpandedInvoice] = useState<number | null>(null);
 	const captureViewRefs = useRef<{ [key: number]: any }>({});
 
 	const getData = async (key: string): Promise<any> => {
@@ -39,10 +38,6 @@ const BillingHistory: React.FC = () => {
 		} catch (error) {
 			console.error('Error al guardar en AsyncStorage:', error);
 		}
-	};
-
-	const toggleExpandInvoice = (index: number) => {
-		setExpandedInvoice(expandedInvoice === index ? null : index);
 	};
 
 	const generateInvoicePngAndShare = async (invoice: any, index: number) => {
@@ -102,10 +97,6 @@ const BillingHistory: React.FC = () => {
 							await saveData('invoices', updatedInvoices);
 							// Actualizar el estado
 							setInvoices(updatedInvoices);
-							// Cerrar si estaba expandida
-							if (expandedInvoice === index) {
-								setExpandedInvoice(null);
-							}
 							Alert.alert('Éxito', 'La factura ha sido eliminada correctamente');
 						} catch (error) {
 							console.error('Error al eliminar factura:', error);
@@ -179,36 +170,22 @@ const BillingHistory: React.FC = () => {
 									}}
 								>
 									<View style={styles.invoiceHeader}>
-										<TouchableOpacity
-											onPress={() => toggleExpandInvoice(index)}
-											activeOpacity={0.8}
-											style={styles.expandButton}
-										>
-											<Ionicons
-												name={expandedInvoice === index ? "chevron-down-outline" : "chevron-forward-outline"}
-												size={20}
-												color="#4a6cff"
-											/>
-											<Text style={styles.invoiceTitle}>{invoice.invoiceName}</Text>
-										</TouchableOpacity>
-
+										<Text style={styles.invoiceTitle}>{invoice.invoiceName}</Text>
 										<Text style={styles.invoiceDate}>
 											<Ionicons name="calendar-outline" size={14} color="#666" />
 											{' ' + new Date(invoice.createdAt).toLocaleDateString()}
 										</Text>
 									</View>
 
-									{expandedInvoice === index && (
-										<View style={styles.expensesContainer}>
-											<Text style={styles.expensesTitle}>Gastos detallados:</Text>
-											{invoice.expenses.map((expense: any, expenseIndex: number) => (
-												<View key={expenseIndex} style={styles.expenseItem}>
-													<Text style={styles.expenseName}>{expense.name}</Text>
-													<Text style={styles.expenseAmount}>${expense.amount.toFixed(2)}</Text>
-												</View>
-											))}
-										</View>
-									)}
+									<View style={styles.expensesContainer}>
+										<Text style={styles.expensesTitle}>Gastos:</Text>
+										{invoice.expenses.map((expense: any, expenseIndex: number) => (
+											<View key={expenseIndex} style={styles.expenseItem}>
+												<Text style={styles.expenseName}>{expense.name}</Text>
+												<Text style={styles.expenseAmount}>${expense.amount.toFixed(2)}</Text>
+											</View>
+										))}
+									</View>
 
 									<View style={styles.invoiceRow}>
 										<Ionicons name="card-outline" size={18} color="#666" />
@@ -319,11 +296,6 @@ const styles = StyleSheet.create({
 		borderBottomColor: '#eee',
 		paddingBottom: 10,
 	},
-	expandButton: {
-		flexDirection: 'row',
-		alignItems: 'center',
-		flex: 1,
-	},
 	invoiceTitle: {
 		fontSize: 18,
 		fontWeight: 'bold',
@@ -370,14 +342,14 @@ const styles = StyleSheet.create({
 	invoiceRow: {
 		flexDirection: 'row',
 		alignItems: 'center',
-		marginVertical: 6,
+		marginVertical: 10,
 	},
 	invoiceLabel: {
 		fontSize: 14,
 		color: '#666',
 		marginLeft: 8,
 		marginRight: 10,
-		width: 80,
+		width: width - 250,
 	},
 	invoiceValue: {
 		fontSize: 14,

@@ -184,7 +184,6 @@ const BillingScreen: React.FC = () => {
 					</Text>
 					<TextInput
 						style={styles.input}
-						placeholder="Ej. Venta a cliente X, Proyecto Y"
 						value={invoiceName}
 						onChangeText={setInvoiceName}
 					/>
@@ -196,14 +195,14 @@ const BillingScreen: React.FC = () => {
 					</Text>
 					<TextInput
 						style={styles.input}
-						placeholder="Nombre del gasto (Ej. Transporte)"
+						placeholder="Nombre del gasto"
 						value={expenseName}
 						onChangeText={setExpenseName}
 					/>
 					<TextInput
 						style={styles.input}
 						keyboardType="numeric"
-						placeholder="Monto (Ej. 200.50)"
+						placeholder="Monto"
 						value={expenseInput}
 						onChangeText={setExpenseInput}
 					/>
@@ -240,12 +239,12 @@ const BillingScreen: React.FC = () => {
 
 				<View style={styles.inputSection}>
 					<Text style={styles.label}>
-						<Ionicons name="cash-outline" size={16} color="#555" /> Precio Final
+						<Ionicons name="cash-outline" size={16} color="#555" /> Total a pagar
 					</Text>
 					<TextInput
 						style={styles.input}
 						keyboardType="numeric"
-						placeholder="Ingrese el precio final (Ej. 500.00)"
+						placeholder="Ingrese el Total a pagar"
 						value={finalPrice}
 						onChangeText={setFinalPrice}
 					/>
@@ -280,11 +279,6 @@ const BillingScreen: React.FC = () => {
 					onPress={handleSave}
 					disabled={isPrintDisabled()}
 				>
-					<Ionicons
-						name="print-outline"
-						size={20}
-						color={isPrintDisabled() ? "#aaa" : "white"}
-					/>
 					<Text style={[
 						styles.printButtonText,
 						isPrintDisabled() && styles.disabledButtonText
