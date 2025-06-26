@@ -72,12 +72,12 @@ const SettingsScreen: React.FC = () => {
 
 	const renderTabContent = () => {
 		switch (activeTab) {
-			case 'permisos':
-				return (
-					<View style={styles.tabContentContainer}>
+			// case 'permisos':
+			// 	return (
+			// 		<View style={styles.tabContentContainer}>
 
-					</View>
-				);
+			// 		</View>
+			// 	);
 			case 'cuenta':
 				return (
 					<View style={styles.tabContentContainer}>
@@ -88,7 +88,7 @@ const SettingsScreen: React.FC = () => {
 								style={styles.textInput}
 								onChangeText={setInputCompanyName}
 								value={inputCompanyName}
-								placeholder="Introduzca su nuevo nombre de usuario"
+								placeholder="Introduzca el nombre de su compañía"
 							/>
 						</View>
 
@@ -115,10 +115,10 @@ const SettingsScreen: React.FC = () => {
 				</View>
 
 				<View style={styles.tabBar}>
-					<TouchableOpacity onPress={() => setActiveTab('permisos')} style={[styles.tabButton, activeTab === 'permisos' && styles.activeTab]}>
+					{/* <TouchableOpacity onPress={() => setActiveTab('permisos')} style={[styles.tabButton, activeTab === 'permisos' && styles.activeTab]}>
 						<Ionicons name="lock-closed" size={20} color={activeTab === 'permisos' ? '#1877f2' : '#888'} />
 						<Text style={[styles.tabButtonText, activeTab === 'permisos' && styles.activeTabText]}>Permisos</Text>
-					</TouchableOpacity>
+					</TouchableOpacity> */}
 					<TouchableOpacity onPress={() => setActiveTab('cuenta')} style={[styles.tabButton, activeTab === 'cuenta' && styles.activeTab]}>
 						<Ionicons name="person" size={20} color={activeTab === 'cuenta' ? '#1877f2' : '#888'} />
 						<Text style={[styles.tabButtonText, activeTab === 'cuenta' && styles.activeTabText]}>Cuenta</Text>

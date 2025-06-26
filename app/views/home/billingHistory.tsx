@@ -7,7 +7,6 @@ import {
 	ScrollView,
 	Dimensions,
 	TouchableOpacity,
-	Platform,
 	Alert
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -15,13 +14,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
-import { WebView } from 'react-native-webview';
 import { captureRef } from 'react-native-view-shot';
 
 const { width } = Dimensions.get('window');
 
 const BillingHistory: React.FC = () => {
 	const [invoices, setInvoices] = useState<any[]>([]);
+	const [expandedInvoice, setExpandedInvoice] = useState<number | null>(null);
 	const captureViewRefs = useRef<{ [key: number]: any }>({});
 
 	const getData = async (key: string): Promise<any> => {
@@ -32,6 +31,18 @@ const BillingHistory: React.FC = () => {
 			console.error('Error al leer AsyncStorage:', error);
 			return null;
 		}
+	};
+
+	const saveData = async (key: string, value: any) => {
+		try {
+			await AsyncStorage.setItem(key, JSON.stringify(value));
+		} catch (error) {
+			console.error('Error al guardar en AsyncStorage:', error);
+		}
+	};
+
+	const toggleExpandInvoice = (index: number) => {
+		setExpandedInvoice(expandedInvoice === index ? null : index);
 	};
 
 	const generateInvoicePngAndShare = async (invoice: any, index: number) => {
@@ -59,7 +70,6 @@ const BillingHistory: React.FC = () => {
 		}
 	};
 
-
 	const handlePrintInvoice = async (invoice: any, index: number) => {
 		try {
 			await generateInvoicePngAndShare(invoice, index);
@@ -67,6 +77,44 @@ const BillingHistory: React.FC = () => {
 			console.error('Error al imprimir factura:', error);
 			Alert.alert('Error', 'No se pudo compartir la factura');
 		}
+	};
+
+	const handleDeleteInvoice = async (index: number) => {
+		// Mostrar alerta de confirmación
+		Alert.alert(
+			'Confirmar eliminación',
+			'¿Estás seguro que deseas eliminar esta factura? Esta acción no se puede deshacer.',
+			[
+				{
+					text: 'Cancelar',
+					style: 'cancel',
+				},
+				{
+					text: 'Eliminar',
+					style: 'destructive',
+					onPress: async () => {
+						try {
+							// Crear una copia del array de facturas
+							const updatedInvoices = [...invoices];
+							// Eliminar la factura seleccionada
+							updatedInvoices.splice(index, 1);
+							// Guardar los cambios
+							await saveData('invoices', updatedInvoices);
+							// Actualizar el estado
+							setInvoices(updatedInvoices);
+							// Cerrar si estaba expandida
+							if (expandedInvoice === index) {
+								setExpandedInvoice(null);
+							}
+							Alert.alert('Éxito', 'La factura ha sido eliminada correctamente');
+						} catch (error) {
+							console.error('Error al eliminar factura:', error);
+							Alert.alert('Error', 'No se pudo eliminar la factura');
+						}
+					},
+				},
+			]
+		);
 	};
 
 	useFocusEffect(
@@ -130,19 +178,41 @@ const BillingHistory: React.FC = () => {
 										}
 									}}
 								>
-
 									<View style={styles.invoiceHeader}>
-										<Ionicons name="receipt-outline" size={20} color="#4a6cff" />
-										<Text style={styles.invoiceTitle}>{invoice.invoiceName}</Text>
+										<TouchableOpacity
+											onPress={() => toggleExpandInvoice(index)}
+											activeOpacity={0.8}
+											style={styles.expandButton}
+										>
+											<Ionicons
+												name={expandedInvoice === index ? "chevron-down-outline" : "chevron-forward-outline"}
+												size={20}
+												color="#4a6cff"
+											/>
+											<Text style={styles.invoiceTitle}>{invoice.invoiceName}</Text>
+										</TouchableOpacity>
+
 										<Text style={styles.invoiceDate}>
 											<Ionicons name="calendar-outline" size={14} color="#666" />
 											{' ' + new Date(invoice.createdAt).toLocaleDateString()}
 										</Text>
 									</View>
 
+									{expandedInvoice === index && (
+										<View style={styles.expensesContainer}>
+											<Text style={styles.expensesTitle}>Gastos detallados:</Text>
+											{invoice.expenses.map((expense: any, expenseIndex: number) => (
+												<View key={expenseIndex} style={styles.expenseItem}>
+													<Text style={styles.expenseName}>{expense.name}</Text>
+													<Text style={styles.expenseAmount}>${expense.amount.toFixed(2)}</Text>
+												</View>
+											))}
+										</View>
+									)}
+
 									<View style={styles.invoiceRow}>
 										<Ionicons name="card-outline" size={18} color="#666" />
-										<Text style={styles.invoiceLabel}>Gastos:</Text>
+										<Text style={styles.invoiceLabel}>Total gastos:</Text>
 										<Text style={styles.invoiceValue}>${totalExpenses.toFixed(2)}</Text>
 									</View>
 
@@ -170,13 +240,22 @@ const BillingHistory: React.FC = () => {
 										</Text>
 									</View>
 
-									<TouchableOpacity
-										style={styles.printButton}
-										onPress={() => handlePrintInvoice(invoice, index)}
-									>
-										<Ionicons name="share-outline" size={18} color="#fff" />
-										<Text style={styles.printButtonText}>Compartir Factura</Text>
-									</TouchableOpacity>
+									<View style={styles.buttonsContainer}>
+										<TouchableOpacity
+											style={[styles.actionButton, styles.printButton]}
+											onPress={() => handlePrintInvoice(invoice, index)}
+										>
+											<Ionicons name="share-outline" size={18} color="#fff" />
+											<Text style={styles.printButtonText}>Compartir</Text>
+										</TouchableOpacity>
+										<TouchableOpacity
+											style={[styles.actionButton, styles.deleteButton]}
+											onPress={() => handleDeleteInvoice(index)}
+										>
+											<Ionicons name="trash-outline" size={18} color="#fff" />
+											<Text style={styles.printButtonText}>Eliminar</Text>
+										</TouchableOpacity>
+									</View>
 								</View>
 							);
 						})
@@ -240,6 +319,11 @@ const styles = StyleSheet.create({
 		borderBottomColor: '#eee',
 		paddingBottom: 10,
 	},
+	expandButton: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		flex: 1,
+	},
 	invoiceTitle: {
 		fontSize: 18,
 		fontWeight: 'bold',
@@ -247,9 +331,41 @@ const styles = StyleSheet.create({
 		color: '#333',
 		flex: 1,
 	},
+	deleteButton: {
+		marginRight: 10,
+		backgroundColor: '#dc3545'
+	},
 	invoiceDate: {
 		fontSize: 12,
 		color: '#666',
+	},
+	expensesContainer: {
+		marginBottom: 12,
+		padding: 10,
+		backgroundColor: '#f5f5f5',
+		borderRadius: 8,
+	},
+	expensesTitle: {
+		fontSize: 14,
+		fontWeight: '600',
+		color: '#555',
+		marginBottom: 8,
+	},
+	expenseItem: {
+		flexDirection: 'row',
+		justifyContent: 'space-between',
+		paddingVertical: 6,
+		borderBottomWidth: 1,
+		borderBottomColor: '#e0e0e0',
+	},
+	expenseName: {
+		fontSize: 14,
+		color: '#333',
+	},
+	expenseAmount: {
+		fontSize: 14,
+		fontWeight: '500',
+		color: '#333',
 	},
 	invoiceRow: {
 		flexDirection: 'row',
@@ -280,14 +396,22 @@ const styles = StyleSheet.create({
 	profitNegative: {
 		color: '#dc3545',
 	},
-	printButton: {
+	buttonsContainer: {
+		flexDirection: 'row',
+		justifyContent: 'space-between',
+		marginTop: 15,
+	},
+	actionButton: {
 		flexDirection: 'row',
 		alignItems: 'center',
 		justifyContent: 'center',
-		backgroundColor: '#4a6cff',
 		padding: 12,
 		borderRadius: 8,
-		marginTop: 15,
+		flex: 1,
+		marginHorizontal: 5
+	},
+	printButton: {
+		backgroundColor: '#4a6cff',
 	},
 	printButtonText: {
 		color: '#fff',
