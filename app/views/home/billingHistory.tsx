@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import {
 	SafeAreaView,
 	StyleSheet,
@@ -13,16 +13,16 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
-import RNFS from 'react-native-fs';
-import Share from 'react-native-share';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
+import { WebView } from 'react-native-webview';
 import { captureRef } from 'react-native-view-shot';
-import Pdf from 'react-native-pdf';
 
 const { width } = Dimensions.get('window');
 
 const BillingHistory: React.FC = () => {
 	const [invoices, setInvoices] = useState<any[]>([]);
-	const [captureViewRefs, setCaptureViewRefs] = useState<{ [key: number]: any }>({});
+	const captureViewRefs = useRef<{ [key: number]: any }>({});
 
 	const getData = async (key: string): Promise<any> => {
 		try {
@@ -34,84 +34,35 @@ const BillingHistory: React.FC = () => {
 		}
 	};
 
-	const generateInvoicePdf = async (invoice: any, index: number) => {
+	const generateInvoicePngAndShare = async (invoice: any, index: number) => {
 		try {
-			// 1. Capturar la vista como imagen
-			const uri = await captureRef(captureViewRefs[index], {
+			const uri = await captureRef(captureViewRefs.current[index], {
 				format: 'png',
 				quality: 1,
 			});
 
-			// 2. Crear un PDF simple con la imagen
-			const fileName = `Factura_${invoice.invoiceName || index}_${Date.now()}.pdf`;
-			const filePath = `${RNFS.DocumentDirectoryPath}/${fileName}`;
+			const fileName = `Factura_${invoice.invoiceName || index}_${Date.now()}.png`;
+			const destPath = `${FileSystem.cacheDirectory}${fileName}`;
 
-			const htmlContent = `
-        <html>
-          <head>
-            <meta charset="UTF-8">
-            <title>${invoice.invoiceName || `Factura ${index + 1}`}</title>
-            <style>
-              body { font-family: Arial; margin: 20px; }
-              .header { text-align: center; margin-bottom: 20px; }
-              .invoice-title { font-size: 18px; font-weight: bold; }
-              .invoice-date { font-size: 12px; color: #666; }
-              .row { display: flex; margin: 5px 0; }
-              .label { width: 100px; color: #666; }
-              .value { font-weight: 500; }
-              .profit { margin-top: 15px; padding-top: 10px; border-top: 1px solid #eee; }
-            </style>
-          </head>
-          <body>
-            <div class="header">
-              <div class="invoice-title">${invoice.invoiceName || `Factura ${index + 1}`}</div>
-              <div class="invoice-date">Fecha: ${new Date(invoice.createdAt).toLocaleDateString()}</div>
-            </div>
-            
-            <div class="row">
-              <div class="label">Gastos:</div>
-              <div class="value">$${invoice.expenses?.reduce((acc: number, val: any) => acc + (val.amount || 0), 0).toFixed(2) || '0.00'}</div>
-            </div>
-            
-            <div class="row">
-              <div class="label">Total a pagar:</div>
-              <div class="value">$${Number(invoice.finalPrice).toFixed(2)}</div>
-            </div>
-            
-            <div class="row profit">
-              <div class="label">${invoice.finalPrice - totalExpenses >= 0 ? 'Ganancia:' : 'Pérdida:'}</div>
-              <div class="value">$${Math.abs(invoice.finalPrice - totalExpenses).toFixed(2)} (${totalExpenses > 0 ? ((invoice.finalPrice - totalExpenses) / totalExpenses * 100).toFixed(2) : '0.00'}%)</div>
-            </div>
-            
-            <div style="margin-top: 30px; text-align: center; color: #888; font-size: 12px;">
-              Gracias por su preferencia
-            </div>
-          </body>
-        </html>
-      `;
+			await FileSystem.copyAsync({
+				from: uri,
+				to: destPath,
+			});
 
-			await RNFS.writeFile(filePath, htmlContent, 'utf8');
-
-			// 3. Compartir el archivo
-			const shareOptions = {
-				title: 'Compartir Factura',
-				message: `Aquí tienes la factura: ${invoice.invoiceName || `Factura ${index + 1}`}`,
-				url: `file://${filePath}`,
-				type: 'application/pdf',
-				subject: `Factura ${invoice.invoiceName || index + 1}`,
-			};
-
-			await Share.open(shareOptions);
-
+			await Sharing.shareAsync(destPath, {
+				dialogTitle: 'Compartir Factura',
+				mimeType: 'image/png',
+			});
 		} catch (error) {
-			console.error('Error al generar PDF:', error);
-			Alert.alert('Error', 'No se pudo generar el PDF de la factura');
+			console.error('Error al compartir la factura:', error);
+			Alert.alert('Error', 'No se pudo compartir la factura');
 		}
 	};
 
+
 	const handlePrintInvoice = async (invoice: any, index: number) => {
 		try {
-			await generateInvoicePdf(invoice, index);
+			await generateInvoicePngAndShare(invoice, index);
 		} catch (error) {
 			console.error('Error al imprimir factura:', error);
 			Alert.alert('Error', 'No se pudo compartir la factura');
@@ -174,11 +125,12 @@ const BillingHistory: React.FC = () => {
 									key={index}
 									style={styles.invoiceCard}
 									ref={ref => {
-										if (ref) {
-											setCaptureViewRefs(prev => ({ ...prev, [index]: ref }));
+										if (ref && !captureViewRefs.current[index]) {
+											captureViewRefs.current[index] = ref;
 										}
 									}}
 								>
+
 									<View style={styles.invoiceHeader}>
 										<Ionicons name="receipt-outline" size={20} color="#4a6cff" />
 										<Text style={styles.invoiceTitle}>{invoice.invoiceName}</Text>
